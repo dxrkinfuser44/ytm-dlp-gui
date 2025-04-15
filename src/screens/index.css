@@ -241,3 +241,37 @@ body {
 	background-color: var(--background-color-darker);
 	transition: 0.2s;
 }
+
+/* Add CSS animations to the progress bars, buttons, and other interactive elements */
+.progress-bar {
+  height: 20px;
+  background-color: var(--default-button-color);
+  transition: width 0.5s ease-in-out;
+}
+
+.act-button.hover {
+  transform: scale(1.1);
+  transition: transform 0.2s;
+}
+
+.act-button.active {
+  transform: scale(0.9);
+  transition: transform 0.2s;
+}
+
+/* Use CSS transitions to ensure smooth animations for the progress bars */
+.progress-bar {
+  transition: width 0.5s ease-in-out;
+}
+
+/* Add high-contrast colors and larger font sizes to improve readability */
+:root {
+  --high-contrast-color: #000000;
+  --high-contrast-background: #ffffff;
+}
+
+body {
+  color: var(--high-contrast-color);
+  background-color: var(--high-contrast-background);
+  font-size: 18px;
+}

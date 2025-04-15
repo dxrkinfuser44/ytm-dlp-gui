@@ -23,6 +23,11 @@ window.onload = async () => {
   document.getElementById('waitingLabel').textContent = language.waiting
   document.getElementById('extTitle').textContent = language.extension
   document.getElementById('ordTitle').textContent = language.order
+
+  // Add progress bars for each track
+  const progressContainer = document.createElement('div');
+  progressContainer.id = 'progressContainer';
+  document.body.appendChild(progressContainer);
 }
 
 window.electronAPI.onDownloadFinished(() => {
@@ -42,6 +47,15 @@ window.electronAPI.onDownloadError(() => {
 
 window.electronAPI.onRecieveProgress((_event, prog) => {
   document.getElementById('waitingLabel').textContent = language.downloading + ` ${prog}%`
+
+  // Update progress bars
+  const progressContainer = document.getElementById('progressContainer');
+  progressContainer.innerHTML = ''; // Clear previous progress bars
+
+  const progressBar = document.createElement('div');
+  progressBar.className = 'progress-bar';
+  progressBar.style.width = `${prog}%`;
+  progressContainer.appendChild(progressBar);
 })
 
 window.electronAPI.onRecieveDirectory((_event, path) => {
@@ -76,3 +90,23 @@ function settingsOpen() {
 
   window.electronAPI.sendClickedSettings(videoURL.replace(/&list.*/gm, ''))
 }
+
+// Add animations to buttons and other interactive elements
+const buttons = document.querySelectorAll('.act-button');
+buttons.forEach(button => {
+  button.addEventListener('mouseover', () => {
+    button.classList.add('hover');
+  });
+
+  button.addEventListener('mouseout', () => {
+    button.classList.remove('hover');
+  });
+
+  button.addEventListener('mousedown', () => {
+    button.classList.add('active');
+  });
+
+  button.addEventListener('mouseup', () => {
+    button.classList.remove('active');
+  });
+});
