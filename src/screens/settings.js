@@ -47,7 +47,7 @@ window.electronAPI.onRecieveMetadata((_event, metadata) => {
   year.value = metadata.upload_year ? metadata.upload_year : ""
   genre.value = metadata.genre ? metadata.genre : ""
   albumArtist.value = metadata.album_artist ? metadata.album_artist : ""
-  lyrics.value = metadata.lyrics ? metadata.lyrics : "sync"
+  lyrics.value = metadata.lyrics || "sync"
   lyrics.removeAttribute('disabled')
   setTimeout(() => { document.getElementById('header').textContent = language.edit }, 1) // it works only this way and I don't know why
   document.getElementById('accButton').removeAttribute('disabled')
