@@ -26,7 +26,7 @@ body {
 .container {
 	width: 100%;
 	height: 100%;
-	padding-top: 40vmin;
+	padding-top: 15vmin;
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
@@ -40,8 +40,8 @@ body {
 }
 
 .waiting-label {
-	padding-bottom: 7.5vmin;
-	font-size: 4.25vmin;
+	padding-bottom: 3vmin;
+	font-size: 4vmin;
 	font-family: "AKONY Bold";
 	color: var(--label-color);
 	user-select: none;
@@ -90,7 +90,7 @@ body {
 
 .bottom-container {
 	display: flex;
-	margin-bottom: 10vmin;
+	margin-bottom: 5vmin;
 	margin-top: auto; 
 	justify-content: center;
 	align-items: center;
@@ -99,7 +99,7 @@ body {
 
 .ord-container {
 	display: flex;
-	margin-bottom: 4.25vmin;
+	margin-bottom: 2vmin;
 	justify-content: center;
 	align-items: center;
 }
