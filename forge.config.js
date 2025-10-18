@@ -76,6 +76,21 @@ module.exports = {
         }
       }
     },
+    {
+      name: '@reforged/maker-appimage',
+      config: {
+        options: {
+          name: 'ytm-dlp-gui',
+          productName: 'YTM-DLP',
+          genericName: 'YouTube Music Downloader',
+          description: 'An app for downloading music off YouTube Music',
+          categories: ['Audio', 'Utility'],
+          icon: 'src/images/icon.png',
+          homepage: 'https://github.com/RENOMIZER/ytm-dlp-gui',
+          bin: 'ytm-dlp-gui',
+        }
+      }
+    },
   ],
   plugins: [
     {

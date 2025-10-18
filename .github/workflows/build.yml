@@ -65,3 +65,9 @@ jobs:
         with:
           name: artifacts-rpm
           path: out/make/rpm
+      - name: Upload appimage artifacts
+        if: runner.os == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-appimage
+          path: out/make/appimage
