@@ -3,6 +3,8 @@ let title = document.getElementById('title')
 let artist = document.getElementById('artist')
 let album = document.getElementById('album')
 let year = document.getElementById('year')
+let genre = document.getElementById('genre')
+let albumArtist = document.getElementById('albumArtist')
 let lyrics = document.getElementById('lrcSelect')
 let language
 
@@ -57,6 +59,17 @@ window.electronAPI.onRecieveMetadata((_event, metadata) => {
 
 window.electronAPI.onRecieveArt((_event, newArt) => {
   art.setAttribute('src', newArt)
+})
+
+window.electronAPI.onMetadataError((_event, errorMessage) => {
+  const errorDetails = errorMessage || language.errorgeneric
+  alert(`${language.errormetadata}\n\n${language.errordetails}: ${errorDetails}`)
+  window.close()
+})
+
+window.electronAPI.onArtError((_event, errorMessage) => {
+  const errorDetails = errorMessage || language.errorgeneric
+  alert(`${language.errorart}\n\n${language.errordetails}: ${errorDetails}`)
 })
 
 function applyMetadata() {

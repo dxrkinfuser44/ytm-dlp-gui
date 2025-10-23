@@ -32,8 +32,13 @@ window.electronAPI.onDownloadFinished(() => {
   }, 1000)
 })
 
-window.electronAPI.onDownloadError(() => {
+window.electronAPI.onDownloadError((_event, errorMessage) => {
   document.getElementById('waitingLabel').textContent = language.error
+  
+  // Show error dialog with details
+  const errorDetails = errorMessage || language.errorgeneric
+  alert(`${language.errordownload}\n\n${language.errordetails}: ${errorDetails}`)
+  
   setTimeout(() => {
     document.getElementById('waitingLabel').textContent = language.waiting
     document.getElementById('dlButton').removeAttribute('disabled')
@@ -46,6 +51,11 @@ window.electronAPI.onRecieveProgress((_event, prog) => {
 
 window.electronAPI.onRecieveDirectory((_event, path) => {
   document.getElementById('inputLocation').value = path
+})
+
+window.electronAPI.onDepsError((_event, errorMessage) => {
+  const errorDetails = errorMessage || language.errorgeneric
+  alert(`${language.errordeps}\n\n${language.errordetails}: ${errorDetails}`)
 })
 
 /* Listeners' functions */

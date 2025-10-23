@@ -13,7 +13,7 @@ const os = require('os');
 /* Classes */
 const YtDlpWrap = new YTDlpWrap(path.join(getLocalPath("ytm-dlp"), 'yt-dlp/yt-dlp' + (os.platform() === 'win32' ? '.exe' : '')));
 Date.prototype.dateNow = function () {
-  return ((this.getDate() < 10) ? "0" : "") + this.getDate() + "-" + this.getMonth() + 1 + "-" + this.getFullYear();
+  return ((this.getDate() < 10) ? "0" : "") + this.getDate() + "-" + (this.getMonth() + 1) + "-" + this.getFullYear();
 }
 Date.prototype.timeNow = function () {
   return ((this.getHours() < 10) ? "0" : "") + this.getHours() + ((this.getMinutes() < 10) ? "0" : "") + this.getMinutes() + ((this.getSeconds() < 10) ? "0" : "") + this.getSeconds();
@@ -101,6 +101,7 @@ app.whenReady().then(async () => {
       })
       .catch((err) => {
         throwErr(err)
+        SetWin.webContents.send('sendArtError', err.message || err.toString())
       });
   })
 
@@ -276,33 +277,43 @@ const getMetadata = async (videoURL) => {
     return
   }
 
-  rawMetadata = await YtDlpWrap.getVideoInfo(videoURL)
+  try {
+    rawMetadata = await YtDlpWrap.getVideoInfo(videoURL)
 
-  if (rawMetadata.artist) {
-    metadata.track = rawMetadata.track
-    metadata.artist = rawMetadata.artist
-    metadata.album = rawMetadata.album
-    metadata.upload_year = rawMetadata.description.match(/(?<=Released on: )[0-9]{4}/gm) ? rawMetadata.description.match(/(?<=Released on: )[0-9]{4}/gm) : rawMetadata.description.match(/(?<=℗ )[0-9]{4}/gm)
-    metadata.album_artist = rawMetadata.album_artist ? rawMetadata.album_artist : rawMetadata.artist
+    if (rawMetadata.artist) {
+      metadata.track = rawMetadata.track
+      metadata.artist = rawMetadata.artist
+      metadata.album = rawMetadata.album
+      metadata.upload_year = rawMetadata.description.match(/(?<=Released on: )[0-9]{4}/gm) ? rawMetadata.description.match(/(?<=Released on: )[0-9]{4}/gm) : rawMetadata.description.match(/(?<=℗ )[0-9]{4}/gm)
+      metadata.album_artist = rawMetadata.album_artist ? rawMetadata.album_artist : rawMetadata.artist
+    }
+    else {
+      metadata.track = rawMetadata.title
+      metadata.artist = rawMetadata.uploader
+      metadata.album = ""
+      metadata.upload_year = rawMetadata.upload_date.match(/^\d{4}/gm)
+      metadata.album_artist = rawMetadata.album_artist ? rawMetadata.album_artist : rawMetadata.uploader
+    }
+
+    metadata.genre = rawMetadata.genre ? rawMetadata.genre : ""
+    metadata.art = rawMetadata['thumbnails'].pop()['url']
+    currentVideo = videoURL
+
+    SetWin.webContents.send('sendMetadata', metadata)
+  } catch (err) {
+    throwErr(err)
+    SetWin.webContents.send('sendMetadataError', err.message || err.toString())
   }
-  else {
-    metadata.track = rawMetadata.title
-    metadata.artist = rawMetadata.uploader
-    metadata.album = ""
-    metadata.upload_year = rawMetadata.upload_date.match(/^\d{4}/gm)
-    metadata.album_artist = rawMetadata.album_artist ? rawMetadata.album_artist : rawMetadata.uploader
-  }
-
-  metadata.genre = rawMetadata.genre ? rawMetadata.genre : ""
-  metadata.art = rawMetadata['thumbnails'].pop()['url']
-  currentVideo = videoURL
-
-  SetWin.webContents.send('sendMetadata', metadata)
 }
 
 const getDeps = async () => {
   if (!fs.existsSync(path.join(getLocalPath("ytm-dlp"), "yt-dlp"))) {
-    fs.mkdir(path.join(getLocalPath("ytm-dlp"), "yt-dlp"), { recursive: true }, (err) => { if (err) { throwErr(err) } })
+    fs.mkdir(path.join(getLocalPath("ytm-dlp"), "yt-dlp"), { recursive: true }, (err) => { 
+      if (err) { 
+        throwErr(err)
+        if (MainWin) MainWin.webContents.send('sendDepsError', err.message || err.toString())
+      } 
+    })
   }
 
   if (!fs.existsSync(path.join(getLocalPath("ytm-dlp"), 'yt-dlp/yt-dlp' + (os.platform() === 'win32' ? '.exe' : '')))) {
@@ -321,24 +332,41 @@ const getDeps = async () => {
 
   if (!fs.existsSync(path.join(getLocalPath("ytm-dlp"), "yt-dlp/arguments.list"))) {
     fs.readFile(path.join(__dirname, 'arguments.list'), 'utf-8', (err, data) => {
-      if (err) { throwErr(err) }
+      if (err) { 
+        throwErr(err)
+        if (MainWin) MainWin.webContents.send('sendDepsError', err.message || err.toString())
+        return
+      }
 
       data = data.replace(/<ffmpeg_directory>/, path.join(getLocalPath("ytm-dlp"), "ffmpeg"))
 
-      fs.writeFile(path.join(getLocalPath('ytm-dlp'), 'yt-dlp/arguments.list'), data, (err) => { if (err) { throwErr(err) } })
+      fs.writeFile(path.join(getLocalPath('ytm-dlp'), 'yt-dlp/arguments.list'), data, (err) => { 
+        if (err) { 
+          throwErr(err)
+          if (MainWin) MainWin.webContents.send('sendDepsError', err.message || err.toString())
+        } 
+      })
     })
   }
 
   if (!fs.existsSync(path.join(getLocalPath('ytm-dlp'), 'styles')) || fs.readdirSync(path.join(getLocalPath('ytm-dlp'), 'styles')) === '') {
     fs.copy(path.join(__dirname, 'styles'), path.join(getLocalPath('ytm-dlp'), 'styles'), { recursive: true }, (err) => {
-      if (err) { throwErr(err) }
+      if (err) { 
+        throwErr(err)
+        if (MainWin) MainWin.webContents.send('sendDepsError', err.message || err.toString())
+        return
+      }
 
       fs.chmod(path.join(getLocalPath('ytm-dlp'), 'styles'), '755')
     })
   }
 
   ffbinaries.downloadBinaries(['ffmpeg', 'ffprobe'], { destination: path.join(getLocalPath("ytm-dlp"), "ffmpeg") }, (err) => {
-    if (err) { throwErr(err) }
+    if (err) { 
+      throwErr(err)
+      if (MainWin) MainWin.webContents.send('sendDepsError', err.message || err.toString())
+      return
+    }
 
     exec(path.join(getLocalPath("ytm-dlp"), "ffmpeg/ffmpeg"), async (_error, _stdout, stderr) => {
       if (!stderr.includes('ffmpeg version')) {
@@ -346,7 +374,12 @@ const getDeps = async () => {
 
         fs.unlinkSync(path.join(getLocalPath("ytm-dlp"), "ffmpeg/ffmpeg" + (os.platform() === 'win32' ? '.exe' : '')))
 
-        ffbinaries.downloadBinaries(['ffmpeg'], { destination: path.join(getLocalPath("ytm-dlp"), "ffmpeg") }, (err) => { if (err) { throwErr(err) } })
+        ffbinaries.downloadBinaries(['ffmpeg'], { destination: path.join(getLocalPath("ytm-dlp"), "ffmpeg") }, (err) => { 
+          if (err) { 
+            throwErr(err)
+            if (MainWin) MainWin.webContents.send('sendDepsError', err.message || err.toString())
+          } 
+        })
       }
     })
 
@@ -356,7 +389,12 @@ const getDeps = async () => {
 
         fs.unlinkSync(path.join(getLocalPath("ytm-dlp"), "ffmpeg/ffprobe" + (os.platform() === 'win32' ? '.exe' : '')))
 
-        ffbinaries.downloadBinaries(['ffprobe'], { destination: path.join(getLocalPath("ytm-dlp"), "ffmpeg") }, (err) => { if (err) { throwErr(err) } })
+        ffbinaries.downloadBinaries(['ffprobe'], { destination: path.join(getLocalPath("ytm-dlp"), "ffmpeg") }, (err) => { 
+          if (err) { 
+            throwErr(err)
+            if (MainWin) MainWin.webContents.send('sendDepsError', err.message || err.toString())
+          } 
+        })
       }
     })
   })
@@ -459,7 +497,7 @@ const startDownload = async (_event, videoURL, dirPath, ext, order) => {
         MainWin.webContents.send('sendProgress', eData.slice(1, 4))
       }
     })
-    .on('error', (err) => { MainWin.webContents.send('sendDownloadError'); throwErr(err) })
+    .on('error', (err) => { MainWin.webContents.send('sendDownloadError', err.message || err.toString()); throwErr(err) })
     .on('close', () => {
       logStream.write('\n')
 
