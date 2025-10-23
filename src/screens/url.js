@@ -1,3 +1,5 @@
+let language
+
 document.getElementById('accButton').addEventListener('click', sendOnlineArt)
 
 window.onload = async () => {

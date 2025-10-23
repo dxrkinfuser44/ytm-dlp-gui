@@ -24,4 +24,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onRecieveMetadata: (callback) => ipcRenderer.on('sendMetadata', callback),
 	onRecieveProgress: (callback) => ipcRenderer.on('sendProgress', callback),
   onRecieveArt: (callback) => ipcRenderer.on('sendArt', callback),
+  onMetadataError: (callback) => ipcRenderer.on('sendMetadataError', callback),
+  onArtError: (callback) => ipcRenderer.on('sendArtError', callback),
+  onDepsError: (callback) => ipcRenderer.on('sendDepsError', callback),
 })
