@@ -400,6 +400,49 @@ const getDeps = async () => {
   })
 }
 
+/* Lyrics functions */
+const getMusixmatchLyrics = async (track, artist) => {
+  try {
+    // Musixmatch API endpoint and token (commonly used in open source projects)
+    const usertoken = '2003072754188f4e90cbb62bac6b74ddb29066fb99beb6c0675f77'
+    const endpoint = 'https://apic-desktop.musixmatch.com/ws/1.1/macro.subtitles.get'
+    
+    // Build query parameters
+    const params = new URLSearchParams({
+      q_track: track,
+      q_artist: artist,
+      usertoken: usertoken,
+      subtitle_format: 'lrc',
+      app_id: 'web-desktop-app-v1.0'
+    })
+    
+    const url = `${endpoint}?${params.toString()}`
+    
+    // Fetch lyrics from Musixmatch
+    const response = await fetch(url)
+    const data = await response.json()
+    
+    // Check if we got a valid response
+    if (data.message?.header?.status_code === 200 && data.message?.body?.macro_calls) {
+      const subtitleCall = data.message.body.macro_calls['track.subtitles.get']
+      if (subtitleCall?.message?.body?.subtitle_list?.length > 0) {
+        const subtitle = subtitleCall.message.body.subtitle_list[0].subtitle
+        const lrcBody = subtitle.subtitle_body
+        
+        if (lrcBody) {
+          return { synced: lrcBody, plain: lrcBody.replace(/\[\d{2}:\d{2}\.\d{2}\]/g, '').trim() }
+        }
+      }
+    }
+    
+    // No lyrics found
+    return null
+  } catch (err) {
+    throwErr(`Musixmatch lyrics fetch error: ${err}`)
+    return null
+  }
+}
+
 /* General functions */
 const startDownload = async (_event, videoURL, dirPath, ext, order) => {
   let arguments = fs.readFileSync(path.join(getLocalPath("ytm-dlp"), "yt-dlp/arguments.list"), 'UTF-8').split(/\n/).map(e => { return e.replace(/"/g, '') })
@@ -418,15 +461,24 @@ const startDownload = async (_event, videoURL, dirPath, ext, order) => {
     }
 
     if (changedMetadata.lyrics !== 'none' && ext !== 'mp3') {
-      let lrc = await getLyrics(changedMetadata.track, changedMetadata.artist.replace(/(,[a-zа-яА-ЯA-Z0-9_ ]).*/g, ''), changedMetadata.album, `${rawMetadata.duration}`)
-      if (lrc.plain === null) {
-        lrc = await getLyrics(changedMetadata.track, changedMetadata.artist.replace(/(,[a-zа-яА-ЯA-Z0-9_ ]).*/g, ''), ' ', `${rawMetadata.duration}`)
+      let lrc = null
+      
+      // Try Musixmatch first for better synced lyrics
+      const cleanArtist = changedMetadata.artist.replace(/(,[a-zа-яА-ЯA-Z0-9_ ]).*/g, '')
+      lrc = await getMusixmatchLyrics(changedMetadata.track, cleanArtist)
+      
+      // Fallback to lyrics-snatcher if Musixmatch fails
+      if (!lrc) {
+        lrc = await getLyrics(changedMetadata.track, cleanArtist, changedMetadata.album, `${rawMetadata.duration}`)
+        if (lrc.plain === null) {
+          lrc = await getLyrics(changedMetadata.track, cleanArtist, ' ', `${rawMetadata.duration}`)
+        }
       }
 
       if (lrc instanceof Error) {
         throwErr(lrc)
       }
-      else {
+      else if (lrc && (lrc.synced || lrc.plain)) {
         arguments.push(
           "--parse-metadata", "NA:(?P<meta_lyrics>.*)",
           "--replace-in-metadata", "meta_lyrics", "NA"
